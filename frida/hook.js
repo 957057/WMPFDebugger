@@ -34,22 +34,20 @@ const patchCDPFilter = (base, config) => {
     });
 };
 
-const hookOnLoadScene = (a1, sceneOffsets, scenePathOffsets) => {
-    const [configOffset, sceneRootOffset, sceneValueOffset] =
-        scenePathOffsets || [56, 8, 16];
+const hookOnLoadScene = (a1, sceneOffsets) => {
     const miniappConfigPtr = a1
-        .add(configOffset)
-        .readPointer()
         .add(sceneOffsets[0])
-        .readPointer();
-    const miniappScenePtr = miniappConfigPtr
-        .add(sceneRootOffset)
         .readPointer()
         .add(sceneOffsets[1])
+        .readPointer();
+    const miniappScenePtr = miniappConfigPtr
+        .add(sceneOffsets[2])
         .readPointer()
-        .add(sceneValueOffset)
+        .add(sceneOffsets[3])
         .readPointer()
-        .add(sceneOffsets[2]);
+        .add(sceneOffsets[4])
+        .readPointer()
+        .add(sceneOffsets[5]);
     send(`[hook] scene: ${miniappScenePtr.readInt()}`);
 
     // 1000: from issue #83 <-- will crash the process
@@ -94,11 +92,7 @@ const patchOnLoadStart = (base, config) => {
                 this.context.rdx = (this.context.rdx & ~0xff) | 0x1;
             }
             // handle onLoad scene
-            hookOnLoadScene(
-                this.context.rcx,
-                config.SceneOffsets,
-                config.ScenePathOffsets,
-            );
+            hookOnLoadScene(this.context.rcx, config.SceneOffsets);
         },
         onLeave(retval) {
             // do nothing
@@ -115,7 +109,6 @@ const parseConfig = () => {
             LoadStartHookOffset: "0x25B52C0",
             CDPFilterHookOffset: "0x30248B0",
             SceneOffsets: [1408, 1344, 488],
-            ScenePathOffsets: [56, 8, 16],
         };
     }
     return JSON.parse(rawConfig);
